@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>锦江H1收益数据看板 - 2026年1-6月</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
 <style>
 /* ===== Design tokens from validated palette ===== */
 :root {
@@ -208,6 +209,11 @@ h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
   <div class="chart-row">
     <div class="chart-card chart-full">
       <h3>每月私、直连订单类型统计</h3>
+      <div style="margin-bottom:8px;">
+        <a id="overviewStackCsvLink" download="每月订单类型统计.csv" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
+          <span style="font-size:16px;line-height:1;">&#8595;</span> 下载CSV
+        </a>
+      </div>
       <div class="chart-wrap" style="height:420px;"><canvas id="chartStackedBreakdown"></canvas></div>
     </div>
   </div>
@@ -237,6 +243,11 @@ h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
   <div class="chart-row">
     <div class="chart-card chart-full">
       <h3>直连类型金额堆叠 — 日历房 / 预售通兑 / 预售单门店</h3>
+      <div style="margin-bottom:8px;">
+        <a id="directStackCsvLink" download="直连类型堆叠.csv" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
+          <span style="font-size:16px;line-height:1;">&#8595;</span> 下载CSV
+        </a>
+      </div>
       <div class="chart-wrap" style="height:380px;"><canvas id="chartDzTypeStack"></canvas></div>
     </div>
   </div>
@@ -278,8 +289,8 @@ h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
     <div class="chart-card chart-full">
       <h3>每月新店/老店金额对比与类型堆叠</h3>
       <div style="margin-bottom:8px;">
-        <a id="slStackCsvLink" download="私连新老店堆叠数据.csv" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
-          <span style="font-size:16px;line-height:1;">&#8595;</span> 下载图表数据CSV
+        <a id="slStackCsvLink" href="新老店明细.csv" download="新老店明细.csv" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
+          <span style="font-size:16px;line-height:1;">&#8595;</span> 下载CSV
         </a>
         <span style="font-size:12px;color:var(--text-muted);">如无效请右键→另存为</span>
       </div>
@@ -1778,6 +1789,7 @@ const ALL_DATA = {
   }
 };
 const MONTHS = ALL_DATA.months;
+// Data labels disabled - too squished on stacked bars
 const COLORS = {
   series1: '#2a78d6', series2: '#008300', series3: '#e87ba4',
   series4: '#eda100', series5: '#1baf7a', series6: '#eb6834',
@@ -1854,7 +1866,7 @@ function barOpts(title, stacked) {
     responsive: true, maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+      legend: { position: 'right', labels: { boxWidth: 12, padding: 8, font: { size: 10 } } },
       tooltip: {
         callbacks: {
           label: function(ctx) {
@@ -1979,8 +1991,8 @@ function renderAll() {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
-        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '万'; } } }
+        legend: { position: 'right', labels: { boxWidth: 12, padding: 8, font: { size: 10 } } },
+      tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '万'; } } }
       },
       scales: {
         x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
@@ -1988,6 +2000,21 @@ function renderAll() {
       }
     }
   });
+
+  // CSV
+  const ovZL = ALL_DATA.direct;
+  const ovSL = ALL_DATA.private;
+  let ovsCsv = '月份,直连日历房(万),直连通兑券(万),直连单门店券(万),私连老店(万),私连新店(万),合计(万)\n';
+  for (let mi of indices) {
+    const rl = +(ovZL.rl.amt[mi]/10000).toFixed(2);
+    const td = +(ovZL.td.amt[mi]/10000).toFixed(2);
+    const sd = +(ovZL.sd.amt[mi]/10000).toFixed(2);
+    const oldA = +(ovSL.old.amt[mi]/10000).toFixed(2);
+    const newA = +(ovSL.new.amt[mi]/10000).toFixed(2);
+    const total = (+rl + +td + +sd + +oldA + +newA).toFixed(2);
+    ovsCsv += MONTHS[mi] + ',' + rl + ',' + td + ',' + sd + ',' + oldA + ',' + newA + ',' + total + '\n';
+  }
+  document.getElementById('overviewStackCsvLink').href = URL.createObjectURL(new Blob(['\ufeff' + ovsCsv], { type: 'text/csv;charset=utf-8;' }));
 
   // ---- Overview Table: 大区×月 ----
   // 预计算各月各连接类型总额及各区域占比
@@ -2108,8 +2135,8 @@ function renderAll() {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
-        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '万'; } } }
+        legend: { position: 'right', labels: { boxWidth: 12, padding: 8, font: { size: 10 } } },
+      tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '万'; } } }
       },
       scales: {
         x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
@@ -2117,6 +2144,15 @@ function renderAll() {
       }
     }
   });
+  // CSV
+  let dzsCsv = '月份,日历房(万),预售通兑券(万),预售单门店券(万),合计(万)\n';
+  for (let mi of indices) {
+    const rl = +(dz.rl.amt[mi]/10000).toFixed(2);
+    const td = +(dz.td.amt[mi]/10000).toFixed(2);
+    const sd = +(dz.sd.amt[mi]/10000).toFixed(2);
+    dzsCsv += MONTHS[mi] + ',' + rl + ',' + td + ',' + sd + ',' + (rl+td+sd).toFixed(2) + '\n';
+  }
+  document.getElementById('directStackCsvLink').href = URL.createObjectURL(new Blob(['\ufeff' + dzsCsv], { type: 'text/csv;charset=utf-8;' }));
 
   // ---- 直连明细表：大区×月 数量/金额/占比 ----
   // 预计算各月各指标总额
@@ -2391,6 +2427,8 @@ document.addEventListener('keydown', (e) => {
 </script>
 </body>
 </html>
+
+
 
 
 
