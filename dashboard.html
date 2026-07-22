@@ -1,0 +1,1831 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>锦江H1收益数据看板 - 2026年1-6月</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+/* ===== Design tokens from validated palette ===== */
+:root {
+  --surface-1:      #fcfcfb;
+  --page-plane:     #f9f9f7;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #898781;
+  --gridline:       #e1e0d9;
+  --baseline:       #c3c2b7;
+  --border:         rgba(11,11,11,0.10);
+  --series-1: #2a78d6; --series-2: #008300; --series-3: #e87ba4;
+  --series-4: #eda100; --series-5: #1baf7a; --series-6: #eb6834;
+  --series-7: #4a3aa7; --series-8: #e34948;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --tab-active-bg: var(--surface-1);
+  --tab-hover-bg: #f0efec;
+  --radius: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    --surface-1:    #1a1a19;
+    --page-plane:   #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:   #898781;
+    --gridline:     #2c2c2a;
+    --baseline:     #383835;
+    --border:       rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-2: #008300; --series-3: #d55181;
+    --series-4: #c98500; --series-5: #199e70; --series-6: #d95926;
+    --series-7: #9085e9; --series-8: #e66767;
+    --tab-hover-bg: #2c2c2a;
+  }
+}
+:root[data-theme="dark"] {
+  --surface-1:    #1a1a19;
+  --page-plane:   #0d0d0d;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:   #898781;
+  --gridline:     #2c2c2a;
+  --baseline:     #383835;
+  --border:       rgba(255,255,255,0.10);
+  --series-1: #3987e5; --series-2: #008300; --series-3: #d55181;
+  --series-4: #c98500; --series-5: #199e70; --series-6: #d95926;
+  --series-7: #9085e9; --series-8: #e66767;
+  --tab-hover-bg: #2c2c2a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--page-plane);
+  color: var(--text-primary);
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header */
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+.subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; }
+
+/* Tab bar */
+.tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--baseline); margin-bottom: 20px; }
+.tab-btn {
+  padding: 10px 24px; cursor: pointer; border: none; background: none;
+  font-size: 14px; font-weight: 500; color: var(--text-secondary);
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+  font-family: inherit;
+}
+.tab-btn:hover { background: var(--tab-hover-bg); color: var(--text-primary); }
+.tab-btn.active { color: var(--series-1); border-bottom-color: var(--series-1); font-weight: 600; }
+
+/* Filter bar */
+.filter-bar {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.filter-bar label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+.month-btn {
+  padding: 4px 14px; border: 1px solid var(--baseline); background: var(--surface-1);
+  border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text-secondary);
+  font-family: inherit; transition: all 0.12s;
+}
+.month-btn:hover { border-color: var(--series-1); color: var(--series-1); }
+.month-btn.active { background: var(--series-1); color: #fff; border-color: var(--series-1); }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.kpi-card {
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px; box-shadow: var(--shadow);
+}
+.kpi-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.kpi-value { font-size: 22px; font-weight: 600; line-height: 1.2; }
+.kpi-value.money { font-size: 18px; }
+.kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* Chart grid */
+.chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.chart-full { grid-column: 1 / -1; }
+.chart-card {
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; box-shadow: var(--shadow);
+}
+.chart-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text-primary); }
+.chart-card .chart-wrap { position: relative; height: 280px; }
+
+/* Table */
+.data-table-wrap { overflow-x: auto; }
+.data-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.data-table th {
+  background: var(--tab-hover-bg); padding: 8px 10px; text-align: right;
+  font-weight: 500; color: var(--text-secondary); border-bottom: 1px solid var(--baseline);
+  white-space: nowrap; font-size: 12px;
+}
+.data-table th:first-child { text-align: left; }
+.data-table td {
+  padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--gridline);
+  white-space: nowrap;
+}
+.data-table td:first-child { text-align: left; font-weight: 500; }
+.data-table th:first-child, .data-table td:first-child {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--surface-1);
+}
+.data-table th:first-child { z-index: 2; }
+.data-table th:first-child::after, .data-table td:first-child::after {
+  content: ''; position: absolute; right: 0; top: 0; bottom: 0;
+  width: 1px; background: var(--baseline);
+}
+.data-table tr:hover td { background: var(--tab-hover-bg); }
+.data-table .num { font-variant-numeric: tabular-nums; }
+.data-table .pct { color: var(--text-muted); font-size: 12px; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  body { padding: 12px; }
+  .chart-row { grid-template-columns: 1fr; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .tab-btn { padding: 8px 14px; font-size: 13px; }
+}
+
+/* Table of detail breakdown */
+.breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 768px) { .breakdown-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>锦江H1收益数据看板</h1>
+<div class="subtitle">2026年1月 — 6月 ｜ 抖音渠道成交明细分析</div>
+
+<!-- Tabs -->
+<nav class="tab-bar">
+  <button class="tab-btn active" data-tab="overview">总览</button>
+  <button class="tab-btn" data-tab="direct">直连分析</button>
+  <button class="tab-btn" data-tab="private">私连分析</button>
+</nav>
+
+<!-- ============== MONTH FILTER (shared) ============== -->
+<div class="filter-bar" id="filterBar">
+  <label>月份筛选：</label>
+  <button class="month-btn active" data-month="all">全部</button>
+  <button class="month-btn" data-month="1月">1月</button>
+  <button class="month-btn" data-month="2月">2月</button>
+  <button class="month-btn" data-month="3月">3月</button>
+  <button class="month-btn" data-month="4月">4月</button>
+  <button class="month-btn" data-month="5月">5月</button>
+  <button class="month-btn" data-month="6月">6月</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 1: OVERVIEW -->
+<!-- ============================================================ -->
+<div class="tab-content active" id="tab-overview">
+
+  <div class="kpi-row" id="overviewKpi"></div>
+
+  <div class="chart-card" style="margin-bottom:16px;">
+    <h3>各月大区明细表 — 直连/私连金额</h3>
+    <div style="margin-bottom:8px;">
+      <a id="overviewCsvLink" download="各月大区明细.csv" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
+        <span style="font-size:16px;line-height:1;">&#8595;</span> 下载CSV
+      </a>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table" id="overviewTable" style="border-collapse:separate;border-spacing:0;"></table>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card chart-full">
+      <h3>每月私、直连订单类型统计</h3>
+      <div class="chart-wrap" style="height:420px;"><canvas id="chartStackedBreakdown"></canvas></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 2: 直连 -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-direct">
+
+  <div class="kpi-row" id="directKpi"></div>
+
+  <div class="chart-card" style="margin-bottom:16px;">
+    <h3>直连明细表 — 各月各区域单量与金额</h3>
+    <div style="margin-bottom:8px;">
+      <a id="directCsvLink" download="直连各月大区明细.csv" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
+        <span style="font-size:16px;line-height:1;">&#8595;</span> 下载CSV
+      </a>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table" id="directTable" style="border-collapse:separate;border-spacing:0;"></table>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card chart-full">
+      <h3>直连类型金额堆叠 — 日历房 / 预售通兑 / 预售单门店</h3>
+      <div class="chart-wrap" style="height:380px;"><canvas id="chartDzTypeStack"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px;">
+    <h3>总部收款明细 — 门店收款</h3>
+    <div style="margin-bottom:8px;">
+      <a href="门店收款明细.csv" download style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
+        <span style="font-size:16px;line-height:1;">&#8595;</span> 下载门店收款CSV
+      </a>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table" id="directMdTable"></table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 3: 私连 -->
+<!-- ============================================================ -->
+<div class="tab-content" id="tab-private">
+
+  <div class="kpi-row" id="privateKpi"></div>
+
+  <div class="chart-card" style="margin-bottom:16px;">
+    <h3>私连明细表 — 各月各区域单量与金额</h3>
+    <div style="margin-bottom:8px;">
+      <a id="privateCsvLink" download="私连各月大区明细.csv" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
+        <span style="font-size:16px;line-height:1;">&#8595;</span> 下载CSV
+      </a>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table" id="privateTable" style="border-collapse:separate;border-spacing:0;"></table>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card chart-full">
+      <h3>每月新店/老店金额对比与类型堆叠</h3>
+      <div style="margin-bottom:8px;">
+        <a id="slStackCsvLink" download="私连新老店堆叠数据.csv" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
+          <span style="font-size:16px;line-height:1;">&#8595;</span> 下载图表数据CSV
+        </a>
+      </div>
+      <div class="chart-wrap" style="height:400px;"><canvas id="chartSlNewOldStack"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-card">
+      <h4 style="font-size:13px;font-weight:600;margin-bottom:8px;">新店 — 各类别金额占比</h4>
+      <div class="chart-wrap" style="height:260px;"><canvas id="chartSlNewDonut"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h4 style="font-size:13px;font-weight:600;margin-bottom:8px;">老店 — 各类别金额占比</h4>
+      <div class="chart-wrap" style="height:260px;"><canvas id="chartSlOldDonut"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px;">
+    <h4 style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text-primary);">总部收款明细 — 私连内含总部+集团总部</h4>
+    <div style="margin-bottom:8px;">
+      <a href="门店收款明细.csv" download style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface-1);border:1px solid var(--baseline);border-radius:var(--radius);color:var(--text-primary);text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer;">
+        <span style="font-size:16px;line-height:1;">&#8595;</span> 下载全量数据CSV
+      </a>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table" id="privateZbTable"></table>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL_DATA = {
+  "months": [
+    "1月",
+    "2月",
+    "3月",
+    "4月",
+    "5月",
+    "6月"
+  ],
+  "overview": {
+    "zl": {
+      "cnt": [
+        13814,
+        23864,
+        46760,
+        48438,
+        25598,
+        109453
+      ],
+      "amt": [
+        3775538.21,
+        6138305.84,
+        10141911.33,
+        10559299.84,
+        5180107.1,
+        21999910.6
+      ]
+    },
+    "sl": {
+      "cnt": [
+        1110,
+        1787,
+        1831,
+        8028,
+        39937,
+        22168
+      ],
+      "amt": [
+        196895.81,
+        377341.08,
+        365518.35,
+        2195533.42,
+        116721.5,
+        3893145.43
+      ]
+    }
+  },
+  "region": {
+    "labels": [
+      "丽芮品牌",
+      "华东区",
+      "华北区",
+      "华南区",
+      "华西区",
+      "山河区"
+    ],
+    "dz": {
+      "cnt": [
+        [
+          61,
+          69,
+          85,
+          66,
+          55,
+          105
+        ],
+        [
+          2502,
+          4586,
+          8944,
+          7976,
+          4023,
+          11332
+        ],
+        [
+          2601,
+          3183,
+          7501,
+          9186,
+          4581,
+          25626
+        ],
+        [
+          3023,
+          4904,
+          12607,
+          11703,
+          4385,
+          20420
+        ],
+        [
+          3536,
+          6335,
+          9869,
+          9909,
+          4615,
+          26429
+        ],
+        [
+          2091,
+          4787,
+          7754,
+          9598,
+          7939,
+          25541
+        ]
+      ],
+      "amt": [
+        [
+          26725.0,
+          35363.0,
+          34166.0,
+          29123.0,
+          19550.05,
+          39046.0
+        ],
+        [
+          687624.0,
+          1192796.0,
+          2004426.85,
+          1852165.7,
+          885502.8,
+          2320798.95
+        ],
+        [
+          875222.72,
+          910268.9,
+          1687682.05,
+          2130566.3,
+          981185.44,
+          5895482.86
+        ],
+        [
+          857107.0,
+          1373474.0,
+          3010467.18,
+          2733493.03,
+          946202.2,
+          4289839.22
+        ],
+        [
+          833772.5,
+          1549595.69,
+          1966595.45,
+          2015859.92,
+          956257.76,
+          5032145.02
+        ],
+        [
+          495086.99,
+          1076808.25,
+          1438573.8,
+          1798091.89,
+          1391408.85,
+          4422598.55
+        ]
+      ]
+    },
+    "sl": {
+      "cnt": [
+        [
+          0,
+          0,
+          7,
+          175,
+          211,
+          746
+        ],
+        [
+          27,
+          283,
+          135,
+          1300,
+          85,
+          3031
+        ],
+        [
+          40,
+          123,
+          205,
+          1065,
+          72,
+          1404
+        ],
+        [
+          722,
+          620,
+          595,
+          1060,
+          69,
+          8058
+        ],
+        [
+          219,
+          633,
+          558,
+          1951,
+          210,
+          2021
+        ],
+        [
+          102,
+          128,
+          331,
+          2192,
+          242,
+          6794
+        ]
+      ],
+      "amt": [
+        [
+          0.0,
+          0.0,
+          964.84,
+          105427.47,
+          11775.1,
+          114871.69
+        ],
+        [
+          1601.0,
+          62328.0,
+          32404.7,
+          233022.22,
+          16036.8,
+          510191.1
+        ],
+        [
+          4350.0,
+          21396.0,
+          580.0,
+          425487.66,
+          5255.7,
+          400913.41
+        ],
+        [
+          159867.33,
+          173163.2,
+          141866.0,
+          209108.52,
+          6439.0,
+          1289132.97
+        ],
+        [
+          30817.58,
+          119296.78,
+          131726.48,
+          583381.99,
+          44463.8,
+          434041.59
+        ],
+        [
+          259.9,
+          1157.1,
+          57976.33,
+          592600.06,
+          30798.9,
+          1123502.97
+        ]
+      ]
+    }
+  },
+  "direct": {
+    "cnt": [
+      13814,
+      23864,
+      46760,
+      48438,
+      25598,
+      109453
+    ],
+    "amt": [
+      3775538.21,
+      6138305.84,
+      10141911.33,
+      10559299.84,
+      5180107.1,
+      21999910.6
+    ],
+    "new": {
+      "cnt": [
+        61,
+        192,
+        388,
+        1324,
+        867,
+        7001
+      ],
+      "amt": [
+        18845.0,
+        55795.25,
+        99276.6,
+        310667.23,
+        194488.1,
+        1566184.99
+      ]
+    },
+    "old": {
+      "cnt": [
+        13753,
+        23672,
+        46372,
+        47114,
+        24731,
+        102452
+      ],
+      "amt": [
+        3756693.21,
+        6082510.59,
+        10042634.73,
+        10248632.61,
+        4985619.0,
+        20433725.61
+      ]
+    },
+    "rl": {
+      "cnt": [
+        12442,
+        22532,
+        43060,
+        41486,
+        13471,
+        53906
+      ],
+      "amt": [
+        3516811.21,
+        5842523.84,
+        9521641.33,
+        9285193.74,
+        2850033.91,
+        11094335.46
+      ]
+    },
+    "ys": {
+      "cnt": [
+        1372,
+        1332,
+        3700,
+        6952,
+        12127,
+        55547
+      ],
+      "amt": [
+        258727.0,
+        295782.0,
+        620270.0,
+        1274106.1,
+        2330073.19,
+        10905575.14
+      ]
+    },
+    "td": {
+      "cnt": [
+        962,
+        621,
+        3577,
+        4665,
+        2457,
+        2477
+      ],
+      "amt": [
+        197475.0,
+        128733.0,
+        615643.4,
+        800907.8,
+        587206.65,
+        463583.05
+      ]
+    },
+    "sd": {
+      "cnt": [
+        410,
+        711,
+        123,
+        2287,
+        9670,
+        53070
+      ],
+      "amt": [
+        61252.0,
+        167049.0,
+        4626.6,
+        473198.3,
+        1742866.54,
+        10441992.09
+      ]
+    },
+    "zb": {
+      "cnt": [
+        13814,
+        23863,
+        46703,
+        45850,
+        24942,
+        67276
+      ],
+      "amt": [
+        3775538.21,
+        6138147.84,
+        10128563.23,
+        10031556.21,
+        5054843.9,
+        13593261.16
+      ]
+    },
+    "md": {
+      "cnt": [
+        0,
+        1,
+        57,
+        2588,
+        656,
+        42177
+      ],
+      "amt": [
+        0.0,
+        158.0,
+        13348.1,
+        527743.63,
+        125263.2,
+        8406649.44
+      ]
+    }
+  },
+  "private": {
+    "fq": {
+      "cnt": [
+        1105,
+        1754,
+        1818,
+        7485,
+        39601,
+        17885
+      ],
+      "amt": [
+        196816.31,
+        376144.38,
+        365119.35,
+        2168030.12,
+        109160.2,
+        3758619.29
+      ]
+    },
+    "nfq": {
+      "cnt": [
+        5,
+        33,
+        13,
+        543,
+        336,
+        4283
+      ],
+      "amt": [
+        79.5,
+        1196.7,
+        399.0,
+        27503.3,
+        7561.3,
+        134526.14
+      ]
+    },
+    "ys": {
+      "cnt": [
+        1102,
+        1745,
+        1815,
+        7110,
+        543,
+        17575
+      ],
+      "amt": [
+        196272.31,
+        374422.38,
+        364253.35,
+        2103357.62,
+        104061.0,
+        3691552.08
+      ]
+    },
+    "rl": {
+      "cnt": [
+        3,
+        9,
+        2,
+        82,
+        10,
+        160
+      ],
+      "amt": [
+        544.0,
+        1722.0,
+        687.0,
+        17097.0,
+        3147.0,
+        40513.0
+      ]
+    },
+    "zb": {
+      "cnt": [
+        297,
+        481,
+        490,
+        617,
+        39755,
+        1412
+      ],
+      "amt": [
+        7221.9,
+        27234.1,
+        1245.0,
+        72374.6,
+        86084.7,
+        224919.79
+      ]
+    },
+    "nfq_type_labels": [
+      "团购套餐",
+      "次卡",
+      "代金券"
+    ],
+    "nfq_type_cnt": [
+      [
+        5,
+        0,
+        0
+      ],
+      [
+        33,
+        0,
+        0
+      ],
+      [
+        13,
+        0,
+        0
+      ],
+      [
+        543,
+        0,
+        0
+      ],
+      [
+        289,
+        47,
+        0
+      ],
+      [
+        3358,
+        917,
+        8
+      ]
+    ],
+    "nfq_type_amt": [
+      [
+        79.5,
+        0.0,
+        0.0
+      ],
+      [
+        1196.7,
+        0.0,
+        0.0
+      ],
+      [
+        399.0,
+        0.0,
+        0.0
+      ],
+      [
+        27503.3,
+        0.0,
+        0.0
+      ],
+      [
+        6336.2,
+        1225.1,
+        0.0
+      ],
+      [
+        104935.12,
+        29431.82,
+        159.2
+      ]
+    ],
+    "new": {
+      "cnt": [
+        0,
+        0,
+        230,
+        2906,
+        111,
+        4888
+      ],
+      "amt": [
+        0.0,
+        0.0,
+        60968.17,
+        1133912.04,
+        13534.8,
+        1161701.03
+      ]
+    },
+    "old": {
+      "cnt": [
+        1110,
+        1787,
+        1601,
+        5122,
+        39826,
+        17280
+      ],
+      "amt": [
+        196895.81,
+        377341.08,
+        304550.18,
+        1061621.38,
+        103186.7,
+        2731444.4
+      ]
+    },
+    "new_region_cnt": [
+      [
+        0,
+        0,
+        7,
+        143,
+        0,
+        25
+      ],
+      [
+        0,
+        0,
+        0,
+        197,
+        13,
+        1297
+      ],
+      [
+        0,
+        0,
+        0,
+        549,
+        1,
+        698
+      ],
+      [
+        0,
+        0,
+        0,
+        130,
+        22,
+        1473
+      ],
+      [
+        0,
+        0,
+        17,
+        833,
+        27,
+        376
+      ],
+      [
+        0,
+        0,
+        206,
+        1054,
+        48,
+        1019
+      ]
+    ],
+    "new_region_amt": [
+      [
+        0.0,
+        0.0,
+        964.84,
+        100013.87,
+        0.0,
+        7296.19
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        42267.6,
+        3094.0,
+        266585.09
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        292009.11,
+        19.9,
+        344342.51
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        14355.0,
+        0.0,
+        309182.63
+      ],
+      [
+        0.0,
+        0.0,
+        2426.0,
+        367520.93,
+        5942.9,
+        89581.14
+      ],
+      [
+        0.0,
+        0.0,
+        57577.33,
+        317745.53,
+        4478.0,
+        144713.47
+      ]
+    ],
+    "md": {
+      "cnt": [
+        813,
+        1306,
+        1341,
+        7411,
+        182,
+        20756
+      ],
+      "amt": [
+        189673.91,
+        350106.98,
+        364273.35,
+        2123158.82,
+        30636.8,
+        3668225.64
+      ]
+    },
+    "new_stack": {
+      "labels": [
+        "房券-预售",
+        "房券-日历房",
+        "非房券-团购套餐",
+        "非房券-次卡",
+        "非房券-代金券"
+      ],
+      "cnt": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          226,
+          1,
+          3,
+          0,
+          0
+        ],
+        [
+          2788,
+          24,
+          94,
+          0,
+          0
+        ],
+        [
+          59,
+          2,
+          50,
+          0,
+          0
+        ],
+        [
+          4676,
+          50,
+          144,
+          0,
+          0
+        ]
+      ],
+      "amt": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          60479.17,
+          489.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1123355.24,
+          7634.0,
+          2922.8,
+          0.0,
+          0.0
+        ],
+        [
+          12607.6,
+          414.0,
+          513.2,
+          0.0,
+          0.0
+        ],
+        [
+          1142912.19,
+          12330.0,
+          3011.5,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    "old_stack": {
+      "labels": [
+        "房券-预售",
+        "房券-日历房",
+        "非房券-团购套餐",
+        "非房券-次卡",
+        "非房券-代金券"
+      ],
+      "cnt": [
+        [
+          1102,
+          3,
+          5,
+          0,
+          0
+        ],
+        [
+          1745,
+          9,
+          33,
+          0,
+          0
+        ],
+        [
+          1589,
+          1,
+          10,
+          0,
+          0
+        ],
+        [
+          4322,
+          58,
+          449,
+          0,
+          0
+        ],
+        [
+          484,
+          8,
+          239,
+          47,
+          0
+        ],
+        [
+          12899,
+          110,
+          3214,
+          917,
+          8
+        ]
+      ],
+      "amt": [
+        [
+          196272.31,
+          544.0,
+          79.5,
+          0.0,
+          0.0
+        ],
+        [
+          374422.38,
+          1722.0,
+          1196.7,
+          0.0,
+          0.0
+        ],
+        [
+          303774.18,
+          198.0,
+          399.0,
+          0.0,
+          0.0
+        ],
+        [
+          980002.38,
+          9463.0,
+          24580.5,
+          0.0,
+          0.0
+        ],
+        [
+          91453.4,
+          2733.0,
+          5823.0,
+          1225.1,
+          0.0
+        ],
+        [
+          2548639.89,
+          28183.0,
+          101923.62,
+          29431.82,
+          159.2
+        ]
+      ]
+    }
+  }
+};
+const MONTHS = ALL_DATA.months;
+const COLORS = {
+  series1: '#2a78d6', series2: '#008300', series3: '#e87ba4',
+  series4: '#eda100', series5: '#1baf7a', series6: '#eb6834',
+  series7: '#4a3aa7', series8: '#e34948',
+  muted: '#898781', grid: '#e1e0d9',
+};
+const COLORS_DARK = {
+  series1: '#3987e5', series2: '#008300', series3: '#d55181',
+  series4: '#c98500', series5: '#199e70', series6: '#d95926',
+  series7: '#9085e9', series8: '#e66767',
+};
+
+function isDark() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ||
+    (window.matchMedia('(prefers-color-scheme: dark)').matches &&
+     document.documentElement.getAttribute('data-theme') !== 'light');
+}
+function c(idx) { const d = isDark() ? COLORS_DARK : COLORS; return d['series'+idx]; }
+function cMuted() { return isDark() ? '#898781' : '#898781'; }
+
+// ======================== ACTIVE MONTH ========================
+let activeMonth = 'all';
+
+function getMonthIndices() {
+  if (activeMonth === 'all') return MONTHS.map((_,i) => i);
+  const idx = MONTHS.indexOf(activeMonth);
+  return idx >= 0 ? [idx] : MONTHS.map((_,i) => i);
+}
+
+function sumArr(arr, indices) {
+  return indices.reduce((s,i) => s + arr[i], 0);
+}
+
+function fmt(n) {
+  if (Math.abs(n) >= 10000) return (n/10000).toFixed(2) + '万';
+  return n.toFixed(2);
+}
+function fmtCnt(n) { return n.toLocaleString(); }
+
+// ======================== TAB SWITCH ========================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    window.dispatchEvent(new Event('resize'));
+  });
+});
+
+// ======================== MONTH FILTER ========================
+document.querySelectorAll('.month-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeMonth = btn.dataset.month;
+    renderAll();
+  });
+});
+
+// ======================== CHART HELPERS ========================
+let charts = {};
+
+function newChart(id, config) {
+  if (charts[id]) { charts[id].destroy(); }
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, config);
+  return charts[id];
+}
+
+function barOpts(title, stacked) {
+  const isAmt = title && title.includes('金额');
+  return {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          label: function(ctx) {
+            const val = ctx.raw;
+            if (isAmt) return ctx.dataset.label + ': ' + val.toFixed(2) + '万';
+            return ctx.dataset.label + ': ' + val.toLocaleString();
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: {
+        beginAtZero: true,
+        grid: { color: COLORS.grid },
+        ticks: {
+          font: { size: 11 },
+          callback: function(v) {
+            if (isAmt) return v.toFixed(0) + '万';
+            return v >= 1000 ? (v/1000).toFixed(1) + 'k' : v;
+          }
+        }
+      }
+    }
+  };
+}
+
+// ======================== RENDER ALL ========================
+function renderAll() {
+  const indices = getMonthIndices();
+  const monthsLabels = indices.map(i => MONTHS[i]);
+  const regionLabelsFull = ALL_DATA.region.labels;
+
+  // ---- Overview KPI ----
+  const zlTotalCnt = sumArr(ALL_DATA.overview.zl.cnt, indices);
+  const zlTotalAmt = sumArr(ALL_DATA.overview.zl.amt, indices);
+  const slTotalCnt = sumArr(ALL_DATA.overview.sl.cnt, indices);
+  const slTotalAmt = sumArr(ALL_DATA.overview.sl.amt, indices);
+  const totalCnt = zlTotalCnt + slTotalCnt;
+  const totalAmt = zlTotalAmt + slTotalAmt;
+
+  document.getElementById('overviewKpi').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">总交易单数</div><div class="kpi-value">${fmtCnt(totalCnt)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">总交易金额</div><div class="kpi-value money">${fmt(totalAmt)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">直连单数</div><div class="kpi-value">${fmtCnt(zlTotalCnt)}</div><div class="kpi-sub">${(zlTotalCnt/totalCnt*100).toFixed(1)}%</div></div>
+    <div class="kpi-card"><div class="kpi-label">直连金额</div><div class="kpi-value money">${fmt(zlTotalAmt)}</div><div class="kpi-sub">${(zlTotalAmt/totalAmt*100).toFixed(1)}%</div></div>
+    <div class="kpi-card"><div class="kpi-label">私连单数</div><div class="kpi-value">${fmtCnt(slTotalCnt)}</div><div class="kpi-sub">${(slTotalCnt/totalCnt*100).toFixed(1)}%</div></div>
+    <div class="kpi-card"><div class="kpi-label">私连金额</div><div class="kpi-value money">${fmt(slTotalAmt)}</div><div class="kpi-sub">${(slTotalAmt/totalAmt*100).toFixed(1)}%</div></div>
+  `;
+
+  // ---- Trend chart ----
+  const trendLabels = indices.map(i => MONTHS[i]);
+  const trendZlAmt = indices.map(i => ALL_DATA.overview.zl.amt[i]);
+  const trendSlAmt = indices.map(i => ALL_DATA.overview.sl.amt[i]);
+
+
+  // ---- Region % donut charts ----
+  const regionLabels = ALL_DATA.region.labels;
+  const regionHue = [c(1),c(2),c(5),c(3),c(6),c(4)];
+  function calcRegionPct(dataArr) {
+    const sums = dataArr.map(row => indices.reduce((s,mi) => s + row[mi], 0));
+    const total = sums.reduce((s,v) => s+v, 0) || 1;
+    return sums.map(v => +(v/total*100).toFixed(1));
+  }
+  const dzRegionPct = calcRegionPct(ALL_DATA.region.dz.amt);
+  const slRegionPct = calcRegionPct(ALL_DATA.region.sl.amt);
+  // 实际金额和单量汇总
+  const dzRegionSumAmt = ALL_DATA.region.dz.amt.map(row => indices.reduce((s,mi) => s + row[mi], 0));
+  const slRegionSumAmt = ALL_DATA.region.sl.amt.map(row => indices.reduce((s,mi) => s + row[mi], 0));
+  const dzRegionSumCnt = ALL_DATA.region.dz.cnt.map(row => indices.reduce((s,mi) => s + row[mi], 0));
+  const slRegionSumCnt = ALL_DATA.region.sl.cnt.map(row => indices.reduce((s,mi) => s + row[mi], 0));
+
+  function donutOpts(amtArr, cntArr) {
+    return {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const i = ctx.dataIndex;
+              const amt = amtArr[i];
+              const cnt = cntArr[i];
+              return ctx.label + ': ' + ctx.parsed + '%  （单量 ' + cnt.toLocaleString() + ' 单，金额 ' + amt.toFixed(2) + ' 元）';
+            }
+          }
+        }
+      },
+      cutout: '55%',
+    };
+  }
+  function donutOpts2(amtArr) {
+    return {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const i = ctx.dataIndex;
+              const amt = amtArr[i] || 0;
+              return ctx.label + ': ' + ctx.parsed + '%  （金额 ' + amt.toFixed(2) + ' 元）';
+            }
+          }
+        }
+      },
+      cutout: '55%',
+    };
+  }
+  // ---- 堆叠柱状图: 各月分类金额 ----
+  newChart('chartStackedBreakdown', {
+    type: 'bar', data: {
+      labels: indices.map(i => MONTHS[i]),
+      datasets: [
+        { label: '直连日历房', data: indices.map(i => +(ALL_DATA.direct.rl.amt[i]/10000).toFixed(2)), backgroundColor: c(1) },
+        { label: '直连通兑券', data: indices.map(i => +(ALL_DATA.direct.td.amt[i]/10000).toFixed(2)), backgroundColor: c(4) },
+        { label: '直连单门店券', data: indices.map(i => +(ALL_DATA.direct.sd.amt[i]/10000).toFixed(2)), backgroundColor: c(6) },
+        { label: '私连老店', data: indices.map(i => +(ALL_DATA.private.old.amt[i]/10000).toFixed(2)), backgroundColor: c(5) },
+        { label: '私连新店', data: indices.map(i => +(ALL_DATA.private.new.amt[i]/10000).toFixed(2)), backgroundColor: c(2) },
+      ]
+    }, options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '万'; } } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { stacked: true, beginAtZero: true, grid: { color: COLORS.grid }, ticks: { font: { size: 11 }, callback: v => v + '万' } }
+      }
+    }
+  });
+
+  // ---- Overview Table: 大区×月 ----
+  // 预计算各月各连接类型总额及各区域占比
+  const monthZlTotals = indices.map(mi => ALL_DATA.region.dz.amt.reduce((s, row) => s + row[mi], 0));
+  const monthSlTotals = indices.map(mi => ALL_DATA.region.sl.amt.reduce((s, row) => s + row[mi], 0));
+  const grandZlTotal = monthZlTotals.reduce((s,v) => s+v, 0);
+  const grandSlTotal = monthSlTotals.reduce((s,v) => s+v, 0);
+
+  // 计算各月占比最高的区域
+  const maxDzRegion = indices.map(mi => {
+    const pcts = regionLabelsFull.map((_, ri) => monthZlTotals[mi] > 0 ? ALL_DATA.region.dz.amt[ri][mi]/monthZlTotals[mi] : 0);
+    return pcts.indexOf(Math.max(...pcts));
+  });
+  const maxSlRegion = indices.map(mi => {
+    const pcts = regionLabelsFull.map((_, ri) => monthSlTotals[mi] > 0 ? ALL_DATA.region.sl.amt[ri][mi]/monthSlTotals[mi] : 0);
+    return pcts.indexOf(Math.max(...pcts));
+  });
+  // 合计列占比最高
+  const maxDzTotal = grandZlTotal > 0 ? regionLabelsFull.map((_, ri) => ALL_DATA.region.dz.amt[ri].reduce((s, v, vi) => s + v, 0)).indexOf(Math.max(...regionLabelsFull.map((_, ri) => ALL_DATA.region.dz.amt[ri].reduce((s, v, vi) => s + v, 0)))) : -1;
+  const maxSlTotal = grandSlTotal > 0 ? regionLabelsFull.map((_, ri) => ALL_DATA.region.sl.amt[ri].reduce((s, v, vi) => s + v, 0)).indexOf(Math.max(...regionLabelsFull.map((_, ri) => ALL_DATA.region.sl.amt[ri].reduce((s, v, vi) => s + v, 0)))) : -1;
+
+  const hlBg = 'rgba(42,120,214,0.10)';
+
+  let ovHtml = '<thead><tr><th rowspan="2">大区</th>';
+  for (let mi of indices) ovHtml += '<th colspan="4" style="text-align:center;border-left:2px solid var(--baseline);">' + MONTHS[mi] + '</th>';
+  ovHtml += '<th colspan="4" style="text-align:center;border-left:2px solid var(--baseline);">合计</th></tr><tr>';
+  for (let mi of indices) {
+    ovHtml += '<th style="border-left:2px solid var(--baseline);">直连金额</th><th>直连占比</th><th>私连金额</th><th>私连占比</th>';
+  }
+  ovHtml += '<th style="border-left:2px solid var(--baseline);">直连金额</th><th>直连占比</th><th>私连金额</th><th>私连占比</th></tr></thead><tbody>';
+
+  for (let ri = 0; ri < regionLabelsFull.length; ri++) {
+    const rName = regionLabelsFull[ri];
+    ovHtml += '<tr><td>' + rName + '</td>';
+    let rowZlAmt = 0, rowSlAmt = 0;
+    for (let mi of indices) {
+      const dzAmt = ALL_DATA.region.dz.amt[ri][mi];
+      const slAmt = ALL_DATA.region.sl.amt[ri][mi];
+      const dzPct = monthZlTotals[mi] > 0 ? (dzAmt/monthZlTotals[mi]*100).toFixed(1) : '0.0';
+      const slPct = monthSlTotals[mi] > 0 ? (slAmt/monthSlTotals[mi]*100).toFixed(1) : '0.0';
+      const dzHl = ri === maxDzRegion[mi] ? ' style="background:' + hlBg + ';font-weight:600;"' : '';
+      const slHl = ri === maxSlRegion[mi] ? ' style="background:' + hlBg + ';font-weight:600;"' : '';
+      ovHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + dzAmt.toFixed(2) + '</td><td class="pct"' + dzHl + '>' + dzPct + '%</td><td class="num">' + slAmt.toFixed(2) + '</td><td class="pct"' + slHl + '>' + slPct + '%</td>';
+      rowZlAmt += dzAmt; rowSlAmt += slAmt;
+    }
+    const rowZlPct = grandZlTotal > 0 ? (rowZlAmt/grandZlTotal*100).toFixed(1) : '0.0';
+    const rowSlPct = grandSlTotal > 0 ? (rowSlAmt/grandSlTotal*100).toFixed(1) : '0.0';
+    const dzTHl = ri === maxDzTotal ? ' style="background:' + hlBg + ';font-weight:600;"' : '';
+    const slTHl = ri === maxSlTotal ? ' style="background:' + hlBg + ';font-weight:600;"' : '';
+    ovHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + rowZlAmt.toFixed(2) + '</td><td class="pct"' + dzTHl + '>' + rowZlPct + '%</td><td class="num">' + rowSlAmt.toFixed(2) + '</td><td class="pct"' + slTHl + '>' + rowSlPct + '%</td></tr>';
+  }
+  // 合计行
+  ovHtml += '<tr style="font-weight:600;border-top:2px solid var(--baseline)"><td>合计</td>';
+  let gZl = 0, gSl = 0;
+  for (let mi of indices) {
+    const mZl = monthZlTotals[mi]; const mSl = monthSlTotals[mi];
+    ovHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + mZl.toFixed(2) + '</td><td class="pct">100.0%</td><td class="num">' + mSl.toFixed(2) + '</td><td class="pct">100.0%</td>';
+    gZl += mZl; gSl += mSl;
+  }
+  ovHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + gZl.toFixed(2) + '</td><td class="pct">100.0%</td><td class="num">' + gSl.toFixed(2) + '</td><td class="pct">100.0%</td></tr></tbody>';
+  document.getElementById('overviewTable').innerHTML = ovHtml;
+
+  // Overview CSV download
+  let ovCsv = '﻿大区,' + indices.map(mi => MONTHS[mi]+'直连金额,'+MONTHS[mi]+'直连占比,'+MONTHS[mi]+'私连金额,'+MONTHS[mi]+'私连占比').join(',') + ',合计直连金额,合计直连占比,合计私连金额,合计私连占比\n';
+  for (let ri = 0; ri < regionLabelsFull.length; ri++) {
+    const rName = regionLabelsFull[ri];
+    let row = rName;
+    let rowZlAmt = 0, rowSlAmt = 0;
+    for (let mi of indices) {
+      const dzAmt = ALL_DATA.region.dz.amt[ri][mi];
+      const slAmt = ALL_DATA.region.sl.amt[ri][mi];
+      const dzPct = monthZlTotals[mi] > 0 ? (dzAmt/monthZlTotals[mi]*100).toFixed(1) : '0.0';
+      const slPct = monthSlTotals[mi] > 0 ? (slAmt/monthSlTotals[mi]*100).toFixed(1) : '0.0';
+      row += ',' + dzAmt.toFixed(2) + ',' + dzPct + '%,' + slAmt.toFixed(2) + ',' + slPct + '%';
+      rowZlAmt += dzAmt; rowSlAmt += slAmt;
+    }
+    const rowZlPct = grandZlTotal > 0 ? (rowZlAmt/grandZlTotal*100).toFixed(1) : '0.0';
+    const rowSlPct = grandSlTotal > 0 ? (rowSlAmt/grandSlTotal*100).toFixed(1) : '0.0';
+    row += ',' + rowZlAmt.toFixed(2) + ',' + rowZlPct + '%,' + rowSlAmt.toFixed(2) + ',' + rowSlPct + '%\n';
+    ovCsv += row;
+  }
+  // 合计行
+  ovCsv += '合计';
+  let gZlC = 0, gSlC = 0;
+  for (let mi of indices) {
+    const mZl = monthZlTotals[mi]; const mSl = monthSlTotals[mi];
+    ovCsv += ',' + mZl.toFixed(2) + ',100.0%,' + mSl.toFixed(2) + ',100.0%';
+    gZlC += mZl; gSlC += mSl;
+  }
+  ovCsv += ',' + gZlC.toFixed(2) + ',100.0%,' + gSlC.toFixed(2) + ',100.0%\n';
+  document.getElementById('overviewCsvLink').href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(ovCsv);
+
+  // ===================== 直连 =====================
+  const dz = ALL_DATA.direct;
+  const dzTotalCnt = sumArr(dz.rl.cnt, indices) + sumArr(dz.ys.cnt, indices);
+  const dzTotalAmt = sumArr(dz.rl.amt, indices) + sumArr(dz.ys.amt, indices);
+
+  document.getElementById('directKpi').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">直连总单数</div><div class="kpi-value">${fmtCnt(dzTotalCnt)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">直连总金额</div><div class="kpi-value money">${fmt(dzTotalAmt)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">日历房占比</div><div class="kpi-value">${(sumArr(dz.rl.cnt,indices)/dzTotalCnt*100).toFixed(1)}%</div><div class="kpi-sub">${fmt(sumArr(dz.rl.amt,indices))}</div></div>
+    <div class="kpi-card"><div class="kpi-label">预售房占比</div><div class="kpi-value">${(sumArr(dz.ys.cnt,indices)/dzTotalCnt*100).toFixed(1)}%</div><div class="kpi-sub">${fmt(sumArr(dz.ys.amt,indices))}</div></div>
+    <div class="kpi-card"><div class="kpi-label">新店单数</div><div class="kpi-value">${fmtCnt(sumArr(dz.new.cnt,indices))}</div><div class="kpi-sub">${(sumArr(dz.new.cnt,indices)/dzTotalCnt*100).toFixed(1)}%</div></div>
+  `;
+
+  const dzLabels = indices.map(i => MONTHS[i]);
+
+  // ---- 直连类型金额堆叠：日历房/通兑/单门店 ----
+  newChart('chartDzTypeStack', {
+    type: 'bar', data: {
+      labels: dzLabels,
+      datasets: [
+        { label: '日历房', data: indices.map(i => +(dz.rl.amt[i]/10000).toFixed(2)), backgroundColor: c(1) },
+        { label: '预售通兑券', data: indices.map(i => +(dz.td.amt[i]/10000).toFixed(2)), backgroundColor: c(4) },
+        { label: '预售单门店券', data: indices.map(i => +(dz.sd.amt[i]/10000).toFixed(2)), backgroundColor: c(6) },
+      ]
+    }, options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '万'; } } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { stacked: true, beginAtZero: true, grid: { color: COLORS.grid }, ticks: { font: { size: 11 }, callback: v => v + '万' } }
+      }
+    }
+  });
+
+  // ---- 直连明细表：大区×月 数量/金额/占比 ----
+  // 预计算各月各指标总额
+  const dzMonthTotals = indices.map(mi => ALL_DATA.region.dz.cnt.reduce((s, row) => s + row[mi], 0));
+  const dzMonthAmtTotals = indices.map(mi => ALL_DATA.region.dz.amt.reduce((s, row) => s + row[mi], 0));
+  const dzGrandCnt = dzMonthTotals.reduce((s,v) => s+v, 0);
+  const dzGrandAmt = dzMonthAmtTotals.reduce((s,v) => s+v, 0);
+
+  // 各月各指标占比最高的区域
+  const dzMaxCntReg = indices.map(mi => {
+    const pcts = regionLabelsFull.map((_, ri) => dzMonthTotals[mi] > 0 ? ALL_DATA.region.dz.cnt[ri][mi]/dzMonthTotals[mi] : 0);
+    return pcts.indexOf(Math.max(...pcts));
+  });
+  const dzMaxAmtReg = indices.map(mi => {
+    const pcts = regionLabelsFull.map((_, ri) => dzMonthAmtTotals[mi] > 0 ? ALL_DATA.region.dz.amt[ri][mi]/dzMonthAmtTotals[mi] : 0);
+    return pcts.indexOf(Math.max(...pcts));
+  });
+  // 合计列
+  const dzMaxTotalCnt = regionLabelsFull.map((_, ri) => ALL_DATA.region.dz.cnt[ri].reduce((s, v, vi) => s + v, 0));
+  const dzMaxTotalAmt = regionLabelsFull.map((_, ri) => ALL_DATA.region.dz.amt[ri].reduce((s, v, vi) => s + v, 0));
+  const dzMaxCntTotal = dzGrandCnt > 0 ? dzMaxTotalCnt.indexOf(Math.max(...dzMaxTotalCnt)) : -1;
+  const dzMaxAmtTotal = dzGrandAmt > 0 ? dzMaxTotalAmt.indexOf(Math.max(...dzMaxTotalAmt)) : -1;
+
+  const dzHlBg = 'rgba(42,120,214,0.10)';
+
+  let dtHtml = '<thead><tr><th rowspan="2">大区</th>';
+  for (let mi of indices) dtHtml += '<th colspan="4" style="text-align:center;border-left:2px solid var(--baseline);">' + MONTHS[mi] + '</th>';
+  dtHtml += '<th colspan="4" style="text-align:center;border-left:2px solid var(--baseline);">合计</th></tr><tr>';
+  for (let _ of indices) dtHtml += '<th style="border-left:2px solid var(--baseline);">单数</th><th>数量占比</th><th>金额</th><th>金额占比</th>';
+  dtHtml += '<th style="border-left:2px solid var(--baseline);">单数</th><th>数量占比</th><th>金额</th><th>金额占比</th></tr></thead><tbody>';
+
+  let dzCsv = '大区';
+  for (let mi of indices) dzCsv += ',' + MONTHS[mi] + '单数,' + MONTHS[mi] + '数量占比,' + MONTHS[mi] + '金额,' + MONTHS[mi] + '金额占比';
+  dzCsv += ',合计单数,合计数量占比,合计金额,合计金额占比\n';
+
+  for (let ri = 0; ri < regionLabelsFull.length; ri++) {
+    const rName = regionLabelsFull[ri];
+    dtHtml += '<tr><td>' + rName + '</td>';
+    let row = rName;
+    let rowTotalCnt = 0, rowTotalAmt = 0;
+    for (let mi of indices) {
+      const cnt = ALL_DATA.region.dz.cnt[ri][mi];
+      const amt = ALL_DATA.region.dz.amt[ri][mi];
+      const cntPct = dzMonthTotals[mi] > 0 ? (cnt/dzMonthTotals[mi]*100).toFixed(1) : '0.0';
+      const amtPct = dzMonthAmtTotals[mi] > 0 ? (amt/dzMonthAmtTotals[mi]*100).toFixed(1) : '0.0';
+      const cHl = ri === dzMaxCntReg[mi] ? ' style="background:' + dzHlBg + ';font-weight:600;"' : '';
+      const aHl = ri === dzMaxAmtReg[mi] ? ' style="background:' + dzHlBg + ';font-weight:600;"' : '';
+      dtHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + cnt.toLocaleString() + '</td><td class="pct"' + cHl + '>' + cntPct + '%</td><td class="num">' + amt.toFixed(2) + '</td><td class="pct"' + aHl + '>' + amtPct + '%</td>';
+      row += ',' + cnt + ',' + cntPct + '%,' + amt.toFixed(2) + ',' + amtPct + '%';
+      rowTotalCnt += cnt; rowTotalAmt += amt;
+    }
+    const rtCntPct = dzGrandCnt > 0 ? (rowTotalCnt/dzGrandCnt*100).toFixed(1) : '0.0';
+    const rtAmtPct = dzGrandAmt > 0 ? (rowTotalAmt/dzGrandAmt*100).toFixed(1) : '0.0';
+    const cTHl = ri === dzMaxCntTotal ? ' style="background:' + dzHlBg + ';font-weight:600;"' : '';
+    const aTHl = ri === dzMaxAmtTotal ? ' style="background:' + dzHlBg + ';font-weight:600;"' : '';
+    dtHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + rowTotalCnt.toLocaleString() + '</td><td class="pct"' + cTHl + '>' + rtCntPct + '%</td><td class="num">' + rowTotalAmt.toFixed(2) + '</td><td class="pct"' + aTHl + '>' + rtAmtPct + '%</td></tr>';
+    dzCsv += row + ',' + rowTotalCnt + ',' + rtCntPct + '%,' + rowTotalAmt.toFixed(2) + ',' + rtAmtPct + '%\n';
+  }
+
+  // 合计行
+  dtHtml += '<tr style="font-weight:600;border-top:2px solid var(--baseline)"><td>合计</td>';
+  dzCsv += '合计';
+  for (let mi of indices) {
+    const mtc = dzMonthTotals[mi]; const mta = dzMonthAmtTotals[mi];
+    dtHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + mtc.toLocaleString() + '</td><td class="pct">100.0%</td><td class="num">' + mta.toFixed(2) + '</td><td class="pct">100.0%</td>';
+    dzCsv += ',' + mtc + ',100.0%,' + mta.toFixed(2) + ',100.0%';
+  }
+  dtHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + dzGrandCnt.toLocaleString() + '</td><td class="pct">100.0%</td><td class="num">' + dzGrandAmt.toFixed(2) + '</td><td class="pct">100.0%</td></tr></tbody>';
+  dzCsv += ',' + dzGrandCnt + ',100.0%,' + dzGrandAmt.toFixed(2) + ',100.0%\n';
+  document.getElementById('directTable').innerHTML = dtHtml;
+  document.getElementById('directCsvLink').href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(dzCsv);
+
+  // store total cnt and amt with key consistent naming
+  dz.cnt = dz.rl.cnt.map((_,i) => dz.rl.cnt[i] + dz.ys.cnt[i]);
+  dz.amt = dz.rl.amt.map((_,i) => dz.rl.amt[i] + dz.ys.amt[i]);
+
+  // 门店收款明细表（直连内）
+  let mdHtml = '<thead><tr><th>月份</th><th>直连门店收款订单数</th><th>占比（单数）</th><th>直连门店收款订单金额</th><th>占比（金额）</th></tr></thead><tbody>';
+  for (let i of indices) {
+    const mdCnt = dz.md.cnt[i];
+    const mdAmt = dz.md.amt[i];
+    const totalCnt = mdCnt + dz.zb.cnt[i];
+    const totalAmt = mdAmt + dz.zb.amt[i];
+    const cntPct = totalCnt > 0 ? (mdCnt/totalCnt*100).toFixed(1) : '0.0';
+    const amtPct = totalAmt > 0 ? (mdAmt/totalAmt*100).toFixed(1) : '0.0';
+    mdHtml += '<tr><td>' + MONTHS[i] + '</td><td class="num">' + mdCnt.toLocaleString() + '</td><td class="pct">' + cntPct + '%</td><td class="num">' + mdAmt.toFixed(2) + '</td><td class="pct">' + amtPct + '%</td></tr>';
+  }
+  mdHtml += '</tbody>';
+  document.getElementById('directMdTable').innerHTML = mdHtml;
+
+  // ===================== 私连 =====================
+  const sl = ALL_DATA.private;
+  const slTotal = sumArr(sl.fq.cnt, indices) + sumArr(sl.nfq.cnt, indices);
+  const slTotalA = sumArr(sl.fq.amt, indices) + sumArr(sl.nfq.amt, indices);
+  const slNewCnt = sumArr(sl.new.cnt, indices);
+  const slNewAmt = sumArr(sl.new.amt, indices);
+  document.getElementById('privateKpi').innerHTML = [
+    '<div class="kpi-card"><div class="kpi-label">私连总单数</div><div class="kpi-value">' + fmtCnt(slTotal) + '</div></div>',
+    '<div class="kpi-card"><div class="kpi-label">私连总金额</div><div class="kpi-value money">' + fmt(slTotalA) + '</div></div>',
+    '<div class="kpi-card"><div class="kpi-label">预售房占比</div><div class="kpi-value">' + (sumArr(sl.ys.cnt,indices)/slTotal*100).toFixed(1) + '%</div><div class="kpi-sub">' + fmt(sumArr(sl.ys.amt,indices)) + '</div></div>',
+    '<div class="kpi-card"><div class="kpi-label">新店单数</div><div class="kpi-value">' + (slNewCnt/slTotal*100).toFixed(1) + '%</div><div class="kpi-sub">' + fmt(slNewAmt) + '</div></div>',
+  ].join('');
+
+  const slLabels = indices.map(i => MONTHS[i]);
+
+  // ---- 私连明细表：大区×月 ----
+  const slMonthTotals = indices.map(mi => ALL_DATA.region.sl.cnt.reduce((s, row) => s + row[mi], 0));
+  const slMonthAmtTotals = indices.map(mi => ALL_DATA.region.sl.amt.reduce((s, row) => s + row[mi], 0));
+  const slGrandCnt = slMonthTotals.reduce((s,v) => s+v, 0);
+  const slGrandAmt = slMonthAmtTotals.reduce((s,v) => s+v, 0);
+  const slMaxCntReg = indices.map(mi => { const p = regionLabelsFull.map((_, ri) => slMonthTotals[mi] > 0 ? ALL_DATA.region.sl.cnt[ri][mi]/slMonthTotals[mi] : 0); return p.indexOf(Math.max(...p)); });
+  const slMaxAmtReg = indices.map(mi => { const p = regionLabelsFull.map((_, ri) => slMonthAmtTotals[mi] > 0 ? ALL_DATA.region.sl.amt[ri][mi]/slMonthAmtTotals[mi] : 0); return p.indexOf(Math.max(...p)); });
+  const slMaxTotCnt = slGrandCnt > 0 ? regionLabelsFull.map((_, ri) => ALL_DATA.region.sl.cnt[ri].reduce((s,v) => s+v,0)).indexOf(Math.max(...regionLabelsFull.map((_, ri) => ALL_DATA.region.sl.cnt[ri].reduce((s,v) => s+v,0)))) : -1;
+  const slMaxTotAmt = slGrandAmt > 0 ? regionLabelsFull.map((_, ri) => ALL_DATA.region.sl.amt[ri].reduce((s,v) => s+v,0)).indexOf(Math.max(...regionLabelsFull.map((_, ri) => ALL_DATA.region.sl.amt[ri].reduce((s,v) => s+v,0)))) : -1;
+  const slHl = 'rgba(42,120,214,0.10)';
+  let sdtHtml = '<thead><tr><th rowspan="2">大区</th>';
+  for (let mi of indices) sdtHtml += '<th colspan="4" style="text-align:center;border-left:2px solid var(--baseline);">' + MONTHS[mi] + '</th>';
+  sdtHtml += '<th colspan="4" style="text-align:center;border-left:2px solid var(--baseline);">合计</th></tr><tr>';
+  for (let _ of indices) sdtHtml += '<th style="border-left:2px solid var(--baseline);">单数</th><th>数量占比</th><th>金额</th><th>金额占比</th>';
+  sdtHtml += '<th style="border-left:2px solid var(--baseline);">单数</th><th>数量占比</th><th>金额</th><th>金额占比</th></tr></thead><tbody>';
+  let slCsv = '大区'; for (let mi of indices) slCsv += ',' + MONTHS[mi] + '单数,' + MONTHS[mi] + '数量占比,' + MONTHS[mi] + '金额,' + MONTHS[mi] + '金额占比'; slCsv += ',合计单数,合计数量占比,合计金额,合计金额占比\n';
+  for (let ri = 0; ri < regionLabelsFull.length; ri++) {
+    const rName = regionLabelsFull[ri]; sdtHtml += '<tr><td>' + rName + '</td>'; let row = rName, rtC = 0, rtA = 0;
+    for (let mi of indices) {
+      const cnt = ALL_DATA.region.sl.cnt[ri][mi], amt = ALL_DATA.region.sl.amt[ri][mi];
+      const cP = slMonthTotals[mi] > 0 ? (cnt/slMonthTotals[mi]*100).toFixed(1) : '0.0';
+      const aP = slMonthAmtTotals[mi] > 0 ? (amt/slMonthAmtTotals[mi]*100).toFixed(1) : '0.0';
+      sdtHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + cnt.toLocaleString() + '</td><td class="pct"' + (ri===slMaxCntReg[mi]?' style="background:'+slHl+';font-weight:600;"':'') + '>' + cP + '%</td><td class="num">' + amt.toFixed(2) + '</td><td class="pct"' + (ri===slMaxAmtReg[mi]?' style="background:'+slHl+';font-weight:600;"':'') + '>' + aP + '%</td>';
+      row += ',' + cnt + ',' + cP + '%,' + amt.toFixed(2) + ',' + aP + '%'; rtC += cnt; rtA += amt;
+    }
+    const rCP = slGrandCnt > 0 ? (rtC/slGrandCnt*100).toFixed(1) : '0.0', rAP = slGrandAmt > 0 ? (rtA/slGrandAmt*100).toFixed(1) : '0.0';
+    sdtHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + rtC.toLocaleString() + '</td><td class="pct"' + (ri===slMaxTotCnt?' style="background:'+slHl+';font-weight:600;"':'') + '>' + rCP + '%</td><td class="num">' + rtA.toFixed(2) + '</td><td class="pct"' + (ri===slMaxTotAmt?' style="background:'+slHl+';font-weight:600;"':'') + '>' + rAP + '%</td></tr>';
+    slCsv += row + ',' + rtC + ',' + rCP + '%,' + rtA.toFixed(2) + ',' + rAP + '%\n';
+  }
+  sdtHtml += '<tr style="font-weight:600;border-top:2px solid var(--baseline)"><td>合计</td>'; slCsv += '合计';
+  for (let mi of indices) {
+    const mtc = slMonthTotals[mi], mta = slMonthAmtTotals[mi];
+    sdtHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + mtc.toLocaleString() + '</td><td class="pct">100.0%</td><td class="num">' + mta.toFixed(2) + '</td><td class="pct">100.0%</td>';
+    slCsv += ',' + mtc + ',100.0%,' + mta.toFixed(2) + ',100.0%';
+  }
+  sdtHtml += '<td class="num" style="border-left:2px solid var(--baseline);">' + slGrandCnt.toLocaleString() + '</td><td class="pct">100.0%</td><td class="num">' + slGrandAmt.toFixed(2) + '</td><td class="pct">100.0%</td></tr></tbody>';
+  slCsv += ',' + slGrandCnt + ',100.0%,' + slGrandAmt.toFixed(2) + ',100.0%\n';
+  document.getElementById('privateTable').innerHTML = sdtHtml;
+  document.getElementById('privateCsvLink').href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(slCsv);
+
+  // ---- 每月新店/老店堆叠柱状图 ----
+  const stackLabels = sl.new_stack.labels;
+  const slMonthLabels = indices.map(i => MONTHS[i]);
+  const stackCatColors = [c(1), c(4), c(3), c(5), c(6)];
+  const slStackDatasets = [];
+  for (let ti = 0; ti < stackLabels.length; ti++) {
+    slStackDatasets.push({ label: '新店-' + stackLabels[ti], data: indices.map(mi => +((sl.new_stack.amt[mi]?.[ti]||0)/10000).toFixed(2)), backgroundColor: stackCatColors[ti], stack: 'new', order: 1 });
+    slStackDatasets.push({ label: '老店-' + stackLabels[ti], data: indices.map(mi => +((sl.old_stack.amt[mi]?.[ti]||0)/10000).toFixed(2)), backgroundColor: stackCatColors[ti], stack: 'old', order: 2 });
+  }
+  newChart('chartSlNewOldStack', {
+    type: 'bar', data: { labels: slMonthLabels, datasets: slStackDatasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '万'; } } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { stacked: true, beginAtZero: true, grid: { color: COLORS.grid }, ticks: { font: { size: 11 }, callback: v => v + '万' } }
+      }
+    }
+  });
+  // CSV
+  let stackCsv = '月份,类型';
+  for (let ti of stackLabels) stackCsv += ',' + ti;
+  stackCsv += ',合计\n';
+  for (let mi of indices) {
+    const mName = MONTHS[mi];
+    for (let key of ['new_stack', 'old_stack']) {
+      const label = key === 'new_stack' ? '新店' : '老店';
+      let row = mName + ',' + label;
+      let total = 0;
+      for (let ti = 0; ti < stackLabels.length; ti++) {
+        const v = sl[key].amt[mi]?.[ti] || 0;
+        row += ',' + v.toFixed(2);
+        total += v;
+      }
+      row += ',' + total.toFixed(2);
+      stackCsv += row + '\n';
+    }
+  }
+  document.getElementById('slStackCsvLink').href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(stackCsv);
+
+  // ---- 新店/老店类别占比环形图 ----
+  const donutHl = [c(1), c(4), c(3), c(5), c(6)];
+  function donutData(d) { const t = d.reduce((s,v) => s+v,0) || 1; return d.map(v => +(v/t*100).toFixed(1)); }
+  const newSums = stackLabels.map((_, ti) => indices.reduce((s, mi) => s + (sl.new_stack.amt[mi]?.[ti]||0), 0));
+  const oldSums = stackLabels.map((_, ti) => indices.reduce((s, mi) => s + (sl.old_stack.amt[mi]?.[ti]||0), 0));
+  function makeDonut(id, sums) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (window._charts?.[id]) window._charts[id].destroy();
+    const pcts = donutData(sums);
+    const ch = new Chart(el, {
+      type: 'doughnut', data: { labels: stackLabels, datasets: [{ data: pcts, backgroundColor: donutHl, borderWidth: 0 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { boxWidth: 10, padding: 8, font: { size: 11 } } },
+          tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.parsed + '% （金额 ' + (sums[ctx.dataIndex]||0).toFixed(2) + ' 元）'; } } }
+        },
+        cutout: '55%',
+      }
+    });
+    if (!window._charts) window._charts = {};
+    window._charts[id] = ch;
+  }
+  makeDonut('chartSlNewDonut', newSums);
+  makeDonut('chartSlOldDonut', oldSums);
+
+  // ---- 总部收款明细（私连内） ----
+  let pzbHtml = '<thead><tr><th>月份</th><th>总部收款订单数</th><th>占比（单数）</th><th>总部收款订单金额</th><th>占比（金额）</th></tr></thead><tbody>';
+  for (let i of indices) {
+    const zbCnt = sl.zb.cnt[i]; const zbAmt = sl.zb.amt[i];
+    const totalCnt = zbCnt + sl.md.cnt[i]; const totalAmt = zbAmt + sl.md.amt[i];
+    const cntPct = totalCnt > 0 ? (zbCnt/totalCnt*100).toFixed(1) : '0.0';
+    const amtPct = totalAmt > 0 ? (zbAmt/totalAmt*100).toFixed(1) : '0.0';
+    pzbHtml += '<tr><td>' + MONTHS[i] + '</td><td class="num">' + zbCnt.toLocaleString() + '</td><td class="pct">' + cntPct + '%</td><td class="num">' + zbAmt.toFixed(2) + '</td><td class="pct">' + amtPct + '%</td></tr>';
+  }
+  pzbHtml += '</tbody>';
+  document.getElementById('privateZbTable').innerHTML = pzbHtml;
+}
+
+// ======================== INIT ========================
+renderAll();
+
+
+// Theme toggle (for testing)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 't' && e.ctrlKey) {
+    const html = document.documentElement;
+    html.setAttribute('data-theme',
+      html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    renderAll();
+  }
+});
+</script>
+</body>
+</html>
+
+
