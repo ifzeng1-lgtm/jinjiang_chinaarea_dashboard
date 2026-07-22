@@ -1668,6 +1668,12 @@ function renderAll() {
     const amtPct = totalAmt > 0 ? (mdAmt/totalAmt*100).toFixed(1) : '0.0';
     mdHtml += '<tr><td>' + MONTHS[i] + '</td><td class="num">' + mdCnt.toLocaleString() + '</td><td class="pct">' + cntPct + '%</td><td class="num">' + mdAmt.toFixed(2) + '</td><td class="pct">' + amtPct + '%</td></tr>';
   }
+  // 合计行
+  const mdTotalCnt = indices.reduce((s,i) => s + dz.md.cnt[i], 0);
+  const mdTotalAmt = indices.reduce((s,i) => s + dz.md.amt[i], 0);
+  const mdAllCnt = mdTotalCnt + indices.reduce((s,i) => s + dz.zb.cnt[i], 0);
+  const mdAllAmt = mdTotalAmt + indices.reduce((s,i) => s + dz.zb.amt[i], 0);
+  mdHtml += '<tr style="font-weight:600;border-top:2px solid var(--baseline)"><td>合计</td><td class="num">' + mdTotalCnt.toLocaleString() + '</td><td class="pct">' + (mdAllCnt>0?(mdTotalCnt/mdAllCnt*100).toFixed(1):'0.0') + '%</td><td class="num">' + mdTotalAmt.toFixed(2) + '</td><td class="pct">' + (mdAllAmt>0?(mdTotalAmt/mdAllAmt*100).toFixed(1):'0.0') + '%</td></tr>';
   mdHtml += '</tbody>';
   document.getElementById('directMdTable').innerHTML = mdHtml;
 
@@ -1807,6 +1813,11 @@ function renderAll() {
     const amtPct = totalAmt > 0 ? (zbAmt/totalAmt*100).toFixed(1) : '0.0';
     pzbHtml += '<tr><td>' + MONTHS[i] + '</td><td class="num">' + zbCnt.toLocaleString() + '</td><td class="pct">' + cntPct + '%</td><td class="num">' + zbAmt.toFixed(2) + '</td><td class="pct">' + amtPct + '%</td></tr>';
   }
+  const zbTotalCnt = indices.reduce((s,i) => s + sl.zb.cnt[i], 0);
+  const zbTotalAmt = indices.reduce((s,i) => s + sl.zb.amt[i], 0);
+  const zbAllCnt = zbTotalCnt + indices.reduce((s,i) => s + sl.md.cnt[i], 0);
+  const zbAllAmt = zbTotalAmt + indices.reduce((s,i) => s + sl.md.amt[i], 0);
+  pzbHtml += '<tr style="font-weight:600;border-top:2px solid var(--baseline)"><td>合计</td><td class="num">' + zbTotalCnt.toLocaleString() + '</td><td class="pct">' + (zbAllCnt>0?(zbTotalCnt/zbAllCnt*100).toFixed(1):'0.0') + '%</td><td class="num">' + zbTotalAmt.toFixed(2) + '</td><td class="pct">' + (zbAllAmt>0?(zbTotalAmt/zbAllAmt*100).toFixed(1):'0.0') + '%</td></tr>';
   pzbHtml += '</tbody>';
   document.getElementById('privateZbTable').innerHTML = pzbHtml;
 }
